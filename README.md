@@ -1,0 +1,1 @@
+# coverage-collector-plugin
