@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+  This plug-in to collect and output the coverage data.
+</div>
