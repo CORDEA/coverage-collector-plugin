@@ -3,7 +3,13 @@
   <f:entry title="Branch name" field="branch">
     <f:textbox default="origin/master" />
   </f:entry>
-  <f:entry title="Directory path" field="path">
+  <f:entry title="Coverage counter type" field="counterType">
+    <f:select />
+  </f:entry>
+  <f:entry title="File path of coverage result" field="coverageFilePath">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Directory path of JUnit results" field="junitDirPath">
     <f:textbox />
   </f:entry>
   <f:entry title="Pebble template" field="template">
