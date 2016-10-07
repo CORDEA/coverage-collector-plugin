@@ -4,6 +4,37 @@ This plug-in to collect and output the coverage data.
 
 ## Template Example
 
+### Coverage Report
+
+```
+{% if masterSummary is empty %}
+{{ ( summary.coverage  * 100 ) | numberformat("#.0#") }} %
+{% else %}
+{{ ( summary.coverage * 100 ) | numberformat("#.0#") }} % ( {{ (( summary.coverage - masterSummary.coverage ) * 100 ) | numberformat("#.0#") }} )
+{% endif %}
+
+| name | missed | covered | coverage |
+|:----:|-------:|--------:|---------:|
+| this | {{ summary.missed }} | {{ summary.covered }} | {{ ( summary.coverage * 100 ) | numberformat("#.0#") }} % |
+{% if masterSummary is empty %}
+| master | - | - | - | - | - |
+{% else %}
+| master | {{ masterSummary.missed }} | {{ masterSummary.covered }} | {{ ( masterSummary.coverage * 100 ) | numberformat("#.0#") }} % |
+{% endif %}
+
+
+## Details
+
+
+| type | missed | covered | coverage |
+|:----:|-------:|--------:|---------:|
+{% for counter in report.counters %}
+| {{ counter.type }} | {{ counter.missed }} | {{ counter.covered }} | {{ ( counter.coverage * 100 ) | numberformat("#.0#") }} % |
+{% endfor %}
+```
+
+### JUnit Test Result
+
 ```
 {% if masterTestTotal is empty %}
 {{ ( testTotal.coverage  * 100 ) | numberformat("#.0#") }} %
