@@ -1,8 +1,8 @@
 package jp.cordea.coveragecollector;
 
 import hudson.FilePath;
-import jp.cordea.coveragecollector.model.Test;
-import jp.cordea.coveragecollector.model.TestSuite;
+import jp.cordea.coveragecollector.model.coverage.Report;
+import jp.cordea.coveragecollector.model.test.TestSuite;
 import lombok.NonNull;
 import org.simpleframework.xml.Serializer;
 import org.simpleframework.xml.core.Persister;
@@ -55,7 +55,7 @@ public class FileHelper {
         return covDir.child(SYSTEM_FILE);
     }
 
-    public boolean storeMasterFile(FilePath filePath, Test test) {
+    public boolean storeMasterFile(FilePath filePath, Report report) {
         FilePath covFile = getMasterFile(filePath);
         if (covFile == null) {
             return false;
@@ -69,7 +69,7 @@ public class FileHelper {
             return false;
         }
         try {
-            serializer.write(test, covFile.write());
+            serializer.write(report, covFile.write());
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -91,12 +91,24 @@ public class FileHelper {
         return files;
     }
 
-    public List<TestSuite> getXmlFiles(@NonNull  List<FilePath> filePaths) {
+    public Report getCoverageReportFile(@NonNull FilePath filePath) {
+        Report report = null;
+        try {
+            String xml = ignoreDoctype(filePath.readToString());
+            report = serializer.read(Report.class, xml);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return report;
+    }
+
+    public List<TestSuite> getXmlFiles(@NonNull List<FilePath> filePaths) {
         List<TestSuite> testSuites = new ArrayList<>();
         for (FilePath filePath : filePaths) {
             if (filePath.getName().endsWith(".xml")) {
                 try {
-                    TestSuite testSuite = serializer.read(TestSuite.class, filePath.read());
+                    String xml = ignoreDoctype(filePath.readToString());
+                    TestSuite testSuite = serializer.read(TestSuite.class, xml);
                     testSuites.add(testSuite);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -105,5 +117,10 @@ public class FileHelper {
         }
         return testSuites;
     }
+
+    private String ignoreDoctype(String xml) {
+        return xml.replaceAll("<!DOCTYPE \\w+ PUBLIC \"[^<>]+\" \"[^<>]+\">", "");
+    }
+
 
 }
