@@ -1,9 +1,8 @@
-package jp.cordea.coveragecollector.model;
+package jp.cordea.coveragecollector.model.test;
 
 import lombok.Getter;
 import lombok.ToString;
 import org.simpleframework.xml.Attribute;
-import org.simpleframework.xml.Element;
 import org.simpleframework.xml.ElementList;
 import org.simpleframework.xml.Root;
 

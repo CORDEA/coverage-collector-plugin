@@ -1,11 +1,10 @@
-package jp.cordea.coveragecollector.model;
+package jp.cordea.coveragecollector.model.test;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.ElementList;
-import org.simpleframework.xml.Root;
 
 import java.util.List;
 
@@ -17,10 +16,10 @@ import java.util.List;
 @AllArgsConstructor
 public class Test {
 
-    @ElementList(entry = "testsuite")
-    private List<TestSuite> testSuite;
+    @ElementList(entry = "testcase")
+    private List<TestCase> testCases;
 
     @Element
-    private TestTotal testTotal;
+    private boolean isError;
 
 }
