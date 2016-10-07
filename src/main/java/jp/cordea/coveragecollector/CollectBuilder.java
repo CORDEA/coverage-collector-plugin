@@ -76,41 +76,110 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
         return false;
     }
 
+    private List<TestSuite> readTestResult(TaskListener taskListener, FileHelper fileHelper, FilePath filePath) {
+        List<TestSuite> testSuites = new ArrayList<>();
+        if (junitDirPath == null || junitDirPath.isEmpty()) {
+            taskListener.getLogger().println("JUnit results does not exist.");
+        } else {
+            List<FilePath> filePaths = fileHelper.getFiles(filePath, junitDirPath);
+            if (filePaths == null) {
+                taskListener.error("Directory is empty, or does not exist.");
+                return testSuites;
+            }
+            testSuites = fileHelper.getXmlFiles(filePaths);
+            if (testSuites.isEmpty()) {
+                taskListener.error("Xml file does not exist.");
+                return testSuites;
+            }
+
+            if (testSuites.size() != filePaths.size()) {
+                taskListener.getLogger().println(
+                        String.format("The number of files is %d. But the number of xml file is %d.", filePaths.size(), testSuites.size()));
+            }
+        }
+        return testSuites;
+    }
+
+    private List<TestCase> getFailureTestCases(List<TestSuite> testSuites) {
+        List<TestCase> testCases = new ArrayList<>();
+        for (TestSuite testSuite : testSuites) {
+            for (TestCase testCase : testSuite.getTestCase()) {
+                if (testCase.getFailure() != null) {
+                    testCases.add(testCase);
+                }
+            }
+        }
+        return testCases;
+    }
+
+    private void loadTemplate(@Nonnull FilePath parentPath, @Nullable Report report, @Nullable Report masterReport, @Nullable List<TestCase> testCases) throws IOException, InterruptedException {
+        FilePath path = parentPath.child(OUTPUT_FILE);
+        if (path.exists()) {
+            path.delete();
+        }
+
+        Summary summary = null;
+        if (report != null) {
+            summary = Summary.fromCounter(report.getCounterByType(CounterType.valueOf(counterType)));
+        }
+        Summary masterSummary = null;
+        if (masterReport != null) {
+            masterSummary = Summary.fromCounter(masterReport.getCounterByType(CounterType.valueOf(counterType)));
+        }
+
+        String text = new TemplateLoader(report, summary, masterReport, masterSummary, testCases).load(template);
+        path.write(text, "utf-8");
+    }
+
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher, @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
         Serializer serializer = new Persister();
         FileHelper fileHelper = new FileHelper();
-        List<FilePath> filePaths = fileHelper.getFiles(filePath, path);
-        if (filePaths == null) {
-            taskListener.error("Directory is empty, or does not exist.");
-            return;
-        }
-        List<TestSuite> testSuites = fileHelper.getXmlFiles(filePaths);
-        if (testSuites.isEmpty()) {
-            taskListener.error("Xml file does not exist.");
+
+        if (run.getResult() != Result.SUCCESS) {
+            List<TestSuite> testSuites = readTestResult(taskListener, fileHelper, filePath);
+            if (testSuites != null) {
+                List<TestCase> testCases = getFailureTestCases(testSuites);
+                if (testCases.size() > 0) {
+                    taskListener.getLogger().println("Maybe fails the test. Load the failed test case.");
+                    FilePath parentPath = fileHelper.getPluginDir(filePath);
+                    if (parentPath == null) {
+                        taskListener.error("Failed to directory operations.");
+                        return;
+                    }
+                    loadTemplate(parentPath, null, null, testCases);
+                }
+            }
             return;
         }
 
-        if (testSuites.size() != filePaths.size()) {
-            taskListener.getLogger().println(
-                    String.format("The number of files is %d. But the number of xml file is %d.", filePaths.size(), testSuites.size()));
+        FilePath file = filePath.child(coverageFilePath);
+        if (!file.exists()) {
+            taskListener.error("Coverage report file is not found.");
+            return;
         }
 
-        TestTotal testTotal = TestTotal.fromTestSuites(testSuites);
+        Report report = fileHelper.getCoverageReportFile(file);
+        if (report == null) {
+            taskListener.error("Coverage report file is not found.");
+            return;
+        }
+
+        for (Counter counter : report.getCounters()) {
+            counter.calcCoverage();
+        }
+
         if (isMaster(run, taskListener)) {
-            Test test = new Test(testSuites, testTotal);
-            fileHelper.storeMasterFile(filePath, test);
+            fileHelper.storeMasterFile(filePath, report);
             return;
         }
 
-        List<TestSuite> masterTestSuites = null;
-        TestTotal masterTestTotal = null;
         FilePath masterFile = fileHelper.getMasterFile(filePath);
-        if (masterFile != null && masterFile.exists()) {
+
+        Report masterReport = null;
+        if (masterFile.exists()) {
             try {
-                Test test = serializer.read(Test.class, masterFile.read());
-                masterTestSuites = test.getTestSuite();
-                masterTestTotal = TestTotal.fromTestSuites(masterTestSuites);
+                masterReport = serializer.read(Report.class, masterFile.read());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -121,12 +190,7 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
             taskListener.error("Failed to directory operations.");
             return;
         }
-        FilePath path = parentPath.child(OUTPUT_FILE);
-        if (path.exists()) {
-            path.delete();
-        }
-        String text = new TemplateLoader(testSuites, masterTestSuites, testTotal, masterTestTotal).load(template);
-        path.write(text, "utf-8");
+        loadTemplate(parentPath, report, masterReport, null);
     }
 
     @Override
