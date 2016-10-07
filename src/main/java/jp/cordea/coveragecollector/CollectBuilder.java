@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
@@ -11,10 +12,14 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import jenkins.tasks.SimpleBuildStep;
-import jp.cordea.coveragecollector.model.Test;
-import jp.cordea.coveragecollector.model.TestSuite;
-import jp.cordea.coveragecollector.model.TestTotal;
+import jp.cordea.coveragecollector.model.coverage.Counter;
+import jp.cordea.coveragecollector.model.coverage.CounterType;
+import jp.cordea.coveragecollector.model.coverage.Report;
+import jp.cordea.coveragecollector.model.coverage.Summary;
+import jp.cordea.coveragecollector.model.test.TestCase;
+import jp.cordea.coveragecollector.model.test.TestSuite;
 import lombok.Getter;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -24,8 +29,10 @@ import org.simpleframework.xml.Serializer;
 import org.simpleframework.xml.core.Persister;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CollectBuilder extends Recorder implements SimpleBuildStep {
@@ -33,7 +40,13 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
     private static final String OUTPUT_FILE = "cov_result.txt";
 
     @Getter
-    private final String path;
+    private final String coverageFilePath;
+
+    @Getter
+    private final String junitDirPath;
+
+    @Getter
+    private final String counterType;
 
     @Getter
     private final String branch;
@@ -42,8 +55,10 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
     private final String template;
 
     @DataBoundConstructor
-    public CollectBuilder(String path, String branch, String template) {
-        this.path = path;
+    public CollectBuilder(String coverageFilePath, String junitDirPath, String counterType, String branch, String template) {
+        this.coverageFilePath = coverageFilePath;
+        this.junitDirPath = junitDirPath;
+        this.counterType = counterType;
         this.branch = branch;
         this.template = template;
     }
@@ -133,10 +148,17 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckPath(@QueryParameter String value) throws IOException, ServletException {
+        public FormValidation doCheckCoverageFilePath(@QueryParameter String value) throws IOException, ServletException {
             if (value.length() == 0) {
-                return FormValidation.error("Please set a directory path.");
+                return FormValidation.error("Please set a xml file.");
             }
+            if (!value.endsWith(".xml")) {
+                return FormValidation.error("Please set a xml file.");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckJunitDirPath(@QueryParameter String value) throws IOException, ServletException {
             return FormValidation.ok();
         }
 
@@ -150,13 +172,21 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
+        public ListBoxModel doFillCounterTypeItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (CounterType type : CounterType.values()) {
+                items.add(type.name());
+            }
+            return items;
+        }
+
         public String getDisplayName() {
             return "Output coverage data";
         }
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            return super.configure(req,formData);
+            return super.configure(req, formData);
         }
     }
 }
