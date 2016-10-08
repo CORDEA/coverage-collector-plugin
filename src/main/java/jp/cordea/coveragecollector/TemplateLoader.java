@@ -4,6 +4,7 @@ import com.mitchellbosecke.pebble.PebbleEngine;
 import com.mitchellbosecke.pebble.error.PebbleException;
 import com.mitchellbosecke.pebble.loader.StringLoader;
 import com.mitchellbosecke.pebble.template.PebbleTemplate;
+import jp.cordea.coveragecollector.model.cobertura.Coverage;
 import jp.cordea.coveragecollector.model.jacoco.Report;
 import jp.cordea.coveragecollector.model.jacoco.Summary;
 import jp.cordea.coveragecollector.model.test.TestCase;
@@ -27,13 +28,25 @@ public class TemplateLoader {
 
     private Summary masterSummary;
 
+    private Coverage coverage;
+
+    private Coverage masterCoverage;
+
     private List<TestCase> failureTestCases;
 
-    public TemplateLoader(Report report, Summary summary, Report masterReport, Summary masterSummary, List<TestCase> failureTestCases) {
+    public TemplateLoader(Report report, Summary summary, Report masterReport, Summary masterSummary) {
         this.report = report;
         this.summary = summary;
         this.masterReport = masterReport;
         this.masterSummary = masterSummary;
+    }
+
+    public TemplateLoader(Coverage coverage, Coverage masterCoverage) {
+        this.coverage = coverage;
+        this.masterCoverage = masterCoverage;
+    }
+
+    public TemplateLoader(List<TestCase> failureTestCases) {
         this.failureTestCases = failureTestCases;
     }
 
@@ -55,6 +68,12 @@ public class TemplateLoader {
         if (masterReport != null) {
             context.put("masterReport", masterReport);
             context.put("masterSummary", masterSummary);
+        }
+        if (coverage != null) {
+            context.put("coverage", coverage);
+        }
+        if (masterCoverage != null) {
+            context.put("masterCoverage", masterCoverage);
         }
         if (failureTestCases != null) {
             context.put("failureTestCases", failureTestCases);

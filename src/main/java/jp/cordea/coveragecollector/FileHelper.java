@@ -1,6 +1,7 @@
 package jp.cordea.coveragecollector;
 
 import hudson.FilePath;
+import jp.cordea.coveragecollector.model.cobertura.Coverage;
 import jp.cordea.coveragecollector.model.jacoco.Report;
 import jp.cordea.coveragecollector.model.test.TestSuite;
 import lombok.NonNull;
@@ -55,7 +56,7 @@ public class FileHelper {
         return covDir.child(SYSTEM_FILE);
     }
 
-    public boolean storeMasterFile(FilePath filePath, Report report) {
+    public boolean storeMasterFile(FilePath filePath, Report report, Coverage coverage) {
         FilePath covFile = getMasterFile(filePath);
         if (covFile == null) {
             return false;
@@ -69,7 +70,12 @@ public class FileHelper {
             return false;
         }
         try {
-            serializer.write(report, covFile.write());
+            if (report != null) {
+                serializer.write(report, covFile.write());
+            }
+            if (coverage != null) {
+                serializer.write(coverage, covFile.write());
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -91,7 +97,7 @@ public class FileHelper {
         return files;
     }
 
-    public Report getCoverageReportFile(@NonNull FilePath filePath) {
+    public Report getJacocoReport(@NonNull FilePath filePath) {
         Report report = null;
         try {
             String xml = ignoreDoctype(filePath.readToString());
@@ -100,6 +106,16 @@ public class FileHelper {
             e.printStackTrace();
         }
         return report;
+    }
+
+    public Coverage getCoberturaReport(@NonNull FilePath filePath) {
+        Coverage coverage = null;
+        try {
+            coverage = serializer.read(Coverage.class, filePath.read());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return coverage;
     }
 
     public List<TestSuite> getXmlFiles(@NonNull List<FilePath> filePaths) {

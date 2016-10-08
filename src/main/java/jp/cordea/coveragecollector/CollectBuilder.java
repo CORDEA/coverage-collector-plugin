@@ -14,6 +14,7 @@ import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.tasks.SimpleBuildStep;
+import jp.cordea.coveragecollector.model.cobertura.Coverage;
 import jp.cordea.coveragecollector.model.jacoco.Counter;
 import jp.cordea.coveragecollector.model.jacoco.CounterType;
 import jp.cordea.coveragecollector.model.jacoco.Report;
@@ -112,7 +113,7 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
         return testCases;
     }
 
-    private void loadTemplate(@Nonnull FilePath parentPath, @Nullable Report report, @Nullable Report masterReport, @Nullable List<TestCase> testCases) throws IOException, InterruptedException {
+    private void loadTemplate(@Nonnull FilePath parentPath, @Nullable Report report, @Nullable Report masterReport) throws IOException, InterruptedException {
         FilePath path = parentPath.child(OUTPUT_FILE);
         if (path.exists()) {
             path.delete();
@@ -127,7 +128,7 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
             masterSummary = Summary.fromCounter(masterReport.getCounterByType(CounterType.valueOf(counterType)));
         }
 
-        String text = new TemplateLoader(report, summary, masterReport, masterSummary, testCases).load(template);
+        String text = new TemplateLoader(report, summary, masterReport, masterSummary).load(template);
         path.write(text, "utf-8");
     }
 
@@ -147,7 +148,12 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
                         taskListener.error("Failed to directory operations.");
                         return;
                     }
-                    loadTemplate(parentPath, null, null, testCases);
+                    FilePath path = parentPath.child(OUTPUT_FILE);
+                    if (path.exists()) {
+                        path.delete();
+                    }
+                    String text = new TemplateLoader(testCases).load(template);
+                    path.write(text, "utf-8");
                 }
             }
             return;
@@ -159,38 +165,62 @@ public class CollectBuilder extends Recorder implements SimpleBuildStep {
             return;
         }
 
-        Report report = fileHelper.getCoverageReportFile(file);
-        if (report == null) {
+        Report report = fileHelper.getJacocoReport(file);
+        Coverage coverage = fileHelper.getCoberturaReport(file);
+
+        if (report == null && coverage == null) {
             taskListener.error("Coverage report file is not found.");
-            return;
         }
 
-        for (Counter counter : report.getCounters()) {
-            counter.calcCoverage();
+        if (report != null) {
+            for (Counter counter : report.getCounters()) {
+                counter.calcCoverage();
+            }
         }
 
         if (isMaster(run, taskListener)) {
-            fileHelper.storeMasterFile(filePath, report);
+            fileHelper.storeMasterFile(filePath, report, coverage);
             return;
         }
 
         FilePath masterFile = fileHelper.getMasterFile(filePath);
-
-        Report masterReport = null;
-        if (masterFile.exists()) {
-            try {
-                masterReport = serializer.read(Report.class, masterFile.read());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
         FilePath parentPath = fileHelper.getPluginDir(filePath);
+
         if (parentPath == null) {
             taskListener.error("Failed to directory operations.");
             return;
         }
-        loadTemplate(parentPath, report, masterReport, null);
+
+        if (report != null) {
+            Report masterReport = null;
+            if (masterFile.exists()) {
+                try {
+                    masterReport = serializer.read(Report.class, masterFile.read());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            loadTemplate(parentPath, report, masterReport);
+        }
+        if (coverage != null) {
+            Coverage masterCoverage = null;
+            if (masterFile.exists()) {
+                try {
+                    masterCoverage = serializer.read(Coverage.class, masterFile.read());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            FilePath path = parentPath.child(OUTPUT_FILE);
+            if (path.exists()) {
+                path.delete();
+            }
+
+            String text = new TemplateLoader(coverage, masterCoverage).load(template);
+            path.write(text, "utf-8");
+        }
     }
 
     @Override
