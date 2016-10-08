@@ -1,13 +1,10 @@
-package jp.cordea.coveragecollector.model.coverage;
+package jp.cordea.coveragecollector.model.jacoco;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.simpleframework.xml.Attribute;
-import org.simpleframework.xml.ElementList;
 import org.simpleframework.xml.Root;
-
-import java.util.List;
 
 /**
  * Created by Yoshihiro Tanaka on 2016/10/05.
@@ -16,18 +13,21 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Method {
+public class Line {
 
     @Attribute
-    private String name;
+    private int nr;
 
     @Attribute
-    private String desc;
+    private int mi;
 
     @Attribute
-    private int line;
+    private int ci;
 
-    @ElementList(inline = true)
-    private List<Counter> counters;
+    @Attribute
+    private int mb;
+
+    @Attribute
+    private int cb;
 
 }

@@ -4,8 +4,8 @@ import com.mitchellbosecke.pebble.PebbleEngine;
 import com.mitchellbosecke.pebble.error.PebbleException;
 import com.mitchellbosecke.pebble.loader.StringLoader;
 import com.mitchellbosecke.pebble.template.PebbleTemplate;
-import jp.cordea.coveragecollector.model.coverage.Report;
-import jp.cordea.coveragecollector.model.coverage.Summary;
+import jp.cordea.coveragecollector.model.jacoco.Report;
+import jp.cordea.coveragecollector.model.jacoco.Summary;
 import jp.cordea.coveragecollector.model.test.TestCase;
 
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package jp.cordea.coveragecollector.model.coverage;
+package jp.cordea.coveragecollector.model.jacoco;
 
 /**
  * Created by Yoshihiro Tanaka on 2016/10/05.

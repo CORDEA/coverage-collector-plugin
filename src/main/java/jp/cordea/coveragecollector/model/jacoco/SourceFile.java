@@ -1,4 +1,4 @@
-package jp.cordea.coveragecollector.model.coverage;
+package jp.cordea.coveragecollector.model.jacoco;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,13 +16,13 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Class {
+public class SourceFile {
 
     @Attribute
     private String name;
 
     @ElementList(inline = true)
-    private List<Method> methods;
+    private List<Line> lines;
 
     @ElementList(inline = true)
     private List<Counter> counters;

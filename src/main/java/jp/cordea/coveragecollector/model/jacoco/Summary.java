@@ -1,4 +1,4 @@
-package jp.cordea.coveragecollector.model.coverage;
+package jp.cordea.coveragecollector.model.jacoco;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

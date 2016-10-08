@@ -1,7 +1,7 @@
 package jp.cordea.coveragecollector;
 
 import hudson.FilePath;
-import jp.cordea.coveragecollector.model.coverage.Report;
+import jp.cordea.coveragecollector.model.jacoco.Report;
 import jp.cordea.coveragecollector.model.test.TestSuite;
 import lombok.NonNull;
 import org.simpleframework.xml.Serializer;
